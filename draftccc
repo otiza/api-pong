@@ -1,0 +1,6 @@
+@WebSocketGateway(6001, {
+  cors: {
+    origin: 'http://localhost:3000',
+    credentials: true,
+  },
+})

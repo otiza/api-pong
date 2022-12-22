@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  Userid   String @id @default(uuid())
+  email    String @unique
+  username String @unique
+
+  gameswon    games[]       @relation("winner")
+  gameslost   games[]       @relation("loser")
+  achivements achievement[]
+  avatar      String?
+  userconfig  userconfig?
+  followed    follow[]      @relation("following")
+  followers   follow[]      @relation("follower")
+  blocker     block[]       @relation("blocker")
+  blocked     block[]       @relation("blocked")
+  livematchp1 livematch?    @relation("asp1")
+  livematchp2 livematch?    @relation("asp2")
+}
+
+model block {
+  blockId   String @id @default(uuid())
+  blocker   User   @relation("blocker", fields: [blockerId], references: [username], onUpdate: Cascade, onDelete: Cascade)
+  blockerId String
+  blocked   User   @relation("blocked", fields: [blockedId], references: [username], onUpdate: Cascade, onDelete: Cascade)
+  blockedId String
+
+  @@unique([blockerId, blockedId])
+}
+
+model follow {
+  followId    String @id @default(uuid())
+  follower    User   @relation("follower", fields: [followerId], references: [username], onUpdate: Cascade, onDelete: Cascade)
+  followerId  String
+  followed    User   @relation("following", fields: [followingId], references: [username], onUpdate: Cascade, onDelete: Cascade)
+  followingId String
+
+  @@unique([followerId, followingId])
+}
+
+model userconfig {
+  ConfigId String  @id @default(uuid())
+  is2FA    Boolean
+  user     User    @relation(fields: [Userid], references: [Userid], onDelete: Cascade)
+  Userid   String  @unique
+}
+
+model games {
+  gameId   String    @id @default(uuid())
+  winner   User?     @relation("winner", fields: [winnerid], references: [Userid], onDelete: SetNull)
+  winnerid String?
+  loser    User?     @relation("loser", fields: [loserid], references: [Userid], onDelete: SetNull)
+  loserid  String?
+  Score    Boolean[]
+  playedat DateTime  @default(now())
+}
+
+model livematch {
+  matchid String @id @default(uuid())
+
+  p1     User?  @relation("asp1", fields: [p1id], references: [Userid])
+  p1id   String @unique
+  p2     User?  @relation("asp2", fields: [p2id], references: [Userid])
+  p2id   String @unique
+  mode   String
+  Socket String
+}
+
+model achievement {
+  aId       String @id @default(uuid())
+  claimedby User[]
+  name      String
+  desc      String
+}

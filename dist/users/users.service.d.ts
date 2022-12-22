@@ -1,0 +1,30 @@
+import { block, follow, User } from '../../node_modules/.prisma/client';
+import { PrismaService } from 'src/prisma.service';
+import { Prisma, userconfig } from '../../node_modules/.prisma/client';
+import { CreateUser } from './dto/CreateUser.input';
+export declare class UsersService {
+    private prisma;
+    constructor(prisma: PrismaService);
+    userdatalreadyexist(userData: CreateUser): Promise<string | boolean>;
+    Create(userData: CreateUser): Promise<User>;
+    getAll(): Promise<User[]>;
+    activate2fa(id: string): Promise<userconfig | boolean>;
+    deactivate2fa(id: string): Promise<userconfig | boolean>;
+    findOne(): Promise<User[] | null>;
+    genfakeone(): Promise<Prisma.UserCreateInput>;
+    faker(): Promise<Prisma.UserCreateInput[]>;
+    daleteall(): Promise<void>;
+    follow(from: string, to: string): Promise<boolean>;
+    unfollow(from: string, to: string): Promise<boolean>;
+    unblock(from: string, to: string): Promise<boolean>;
+    block(from: string, to: string): Promise<boolean>;
+    findOneById(id: string): Promise<User | null>;
+    findOneByusername(username: string): Promise<User | null>;
+    isalreadyblocked(userfrom: User, userto: User): Promise<boolean>;
+    isalreadyfollowing(userfrom: User, userto: User): Promise<boolean>;
+    getfollowers(id: string): Promise<follow[] | null>;
+    getfollowed(id: string): Promise<follow[] | null>;
+    getblocks(id: string): Promise<block[] | null>;
+    getblockers(id: string): Promise<block[] | null>;
+    findOneByEmail(email: string): Promise<User | null>;
+}
