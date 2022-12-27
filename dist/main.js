@@ -8,6 +8,25 @@ const swagger_1 = require("@nestjs/swagger");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.use(cookieParser());
+    app.enableCors({
+        origin: 'http://localhost:3000',
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+        credentials: true,
+        allowedHeaders: [
+            'cookie',
+            'Cookie',
+            'authorization',
+            'Authorization',
+            'content-type',
+        ],
+        exposedHeaders: [
+            'cookie',
+            'Cookie',
+            'authorization',
+            'Authorization',
+            'content-type',
+        ],
+    });
     app.useGlobalPipes(new common_1.ValidationPipe());
     const config = new swagger_1.DocumentBuilder()
         .setTitle('trend example')

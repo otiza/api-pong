@@ -27,6 +27,7 @@ export class UsersController {
 
   @Get('all')
   async getall() {
+    console.log("called");
     const all: User[] = await this.userService.getAll();
     return all;
   }

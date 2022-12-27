@@ -7,6 +7,25 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
 
+  app.enableCors({
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    credentials: true,
+    allowedHeaders: [
+      'cookie',
+      'Cookie',
+      'authorization',
+      'Authorization',
+      'content-type',
+    ],
+    exposedHeaders: [
+      'cookie',
+      'Cookie',
+      'authorization',
+      'Authorization',
+      'content-type',
+    ],
+  });
   app.useGlobalPipes(new ValidationPipe());
   const config = new DocumentBuilder()
     .setTitle('trend example')
