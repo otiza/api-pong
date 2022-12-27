@@ -72,7 +72,7 @@ export class UsersController {
   async getme(@Req() req: RequestWithUser) {
     const user: User = await this.userService.findOneByEmail(req.user.email);
     if (!user) throw new HttpException('are u a user', HttpStatus.NOT_FOUND);
-    return req.user;
+    return user;
   }
   @Post('add')
   async create(@Body() user: CreateUser) {

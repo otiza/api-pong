@@ -1,9 +1,10 @@
-import { Controller, Get, HttpException, HttpStatus, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpException, HttpStatus, Param, Req, UseGuards } from '@nestjs/common';
 import { games, User } from '@prisma/client';
-
+import { PipeTransform, Injectable, ArgumentMetadata } from '@nestjs/common';
 import { GamesService } from './games.service';
 import { JwtAuthGuard } from 'src/auth/guard/jwt.guard';
 import RequestWithUser from 'src/interfaces/requestUser.interface';
+import { gametodatabase } from './games.gateway';
 @Controller('games')
 export class GamesController {
     constructor(private gameservice: GamesService){}
@@ -30,5 +31,28 @@ async getgames(){
   async getloses(@Req() req: RequestWithUser) {
     const history= await this.gameservice.getlose(req.user.Userid);
     return history; 
+  }
+  @UseGuards(JwtAuthGuard)
+  @Get('addgame/:id')
+  async getl(@Req() req: RequestWithUser,@Param('id') id: string) {
+    let game : gametodatabase=  new gametodatabase();
+    if(id == "win"){
+      console.log("wi");
+      game.winnerid = req.user.Userid;
+    game.loserid= 'a7ad31ed-1ba7-46f3-b93b-a08c7ab2b25c'
+    game.scorewin= 3
+    game.scorelose= 0}
+    else if(id == "lose"){
+      console.log("lose")
+      game.loserid = req.user.Userid;
+    game.winnerid= 'a7ad31ed-1ba7-46f3-b93b-a08c7ab2b25c'
+    game.scorewin= 3
+    game.scorelose= 0}
+    else
+    {
+      return("syntax error");
+    }
+  const history= await this.gameservice.pushgame(game);
+    return "game created"; 
   }
 }

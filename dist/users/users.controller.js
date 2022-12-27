@@ -60,7 +60,7 @@ let UsersController = class UsersController {
         const user = await this.userService.findOneByEmail(req.user.email);
         if (!user)
             throw new common_1.HttpException('are u a user', common_1.HttpStatus.NOT_FOUND);
-        return req.user;
+        return user;
     }
     async create(user) {
         const error = await this.userService.userdatalreadyexist(user);

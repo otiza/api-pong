@@ -15,4 +15,5 @@ export declare class GamesController {
     getloses(req: RequestWithUser): Promise<{
         gameslost: games[];
     }>;
+    getl(req: RequestWithUser, id: string): Promise<"syntax error" | "game created">;
 }

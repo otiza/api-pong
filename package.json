@@ -31,7 +31,7 @@
     "@nestjs/swagger": "^6.1.4",
     "@nestjs/typeorm": "^9.0.1",
     "@nestjs/websockets": "^9.2.0",
-    "@prisma/client": "^4.6.1",
+    "@prisma/client": "4.8.0",
     "@types/passport-jwt": "^3.0.7",
     "@types/passport-oauth2": "^1.4.11",
     "axios": "^1.2.1",

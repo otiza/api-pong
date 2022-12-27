@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { userInfo } from 'os';
+
 import { AuthService } from 'src/auth/auth.service';
 import { PrismaService } from 'src/prisma.service';
 import { Prisma, userconfig } from '../../node_modules/.prisma/client';
 import { UsersService } from 'src/users/users.service';
 import { Game, gametodatabase } from './games.gateway';
 import { games } from '@prisma/client';
-import { elementAt } from 'rxjs';
+
 
 
 //import { PrismaService } from 'src/prisma.service';
