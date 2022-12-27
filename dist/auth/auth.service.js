@@ -32,11 +32,9 @@ let AuthService = class AuthService {
         };
         return { accessToken: this.jwtService.sign(payload) };
     }
-    async userinfo(payload) {
-        const user = await this.jwtService.decode(payload);
-        return {
-            user,
-        };
+    userinfo(payload) {
+        const user = this.jwtService.decode(payload);
+        return user["id"];
     }
 };
 AuthService = __decorate([

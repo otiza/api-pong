@@ -5,10 +5,11 @@ import { gameGateway } from './games.gateway';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from 'src/auth/auth.service';
 import { UsersModule } from 'src/users/users.module';
+import { PrismaService } from 'src/prisma.service';
 
 @Module({
   imports: [JwtModule, UsersModule],
-  providers: [GamesService, gameGateway, AuthService],
+  providers: [GamesService, gameGateway, AuthService, PrismaService],
   controllers: [GamesController],
 })
 export class GamesModule {}

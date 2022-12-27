@@ -40,7 +40,7 @@ export class UsersService {
       data: { is2FA: true },
     });
   }
-
+  
   async deactivate2fa(id: string): Promise<userconfig | boolean> {
     const user = await this.findOneById(id);
     if (!user) return false;
@@ -255,4 +255,5 @@ export class UsersService {
       include: { userconfig: { select: { is2FA: true } } },
     });
   }
+  
 }

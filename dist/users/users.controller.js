@@ -22,6 +22,7 @@ let UsersController = class UsersController {
         this.userService = userService;
     }
     async getall() {
+        console.log("were here");
         const all = await this.userService.getAll();
         return all;
     }

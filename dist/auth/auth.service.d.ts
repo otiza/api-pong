@@ -11,9 +11,5 @@ export declare class AuthService {
     loginUser(request: RequestWithUser): {
         accessToken: string;
     };
-    userinfo(payload: string): Promise<{
-        user: string | {
-            [key: string]: any;
-        };
-    }>;
+    userinfo(payload: string): string;
 }

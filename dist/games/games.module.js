@@ -14,12 +14,13 @@ const games_gateway_1 = require("./games.gateway");
 const jwt_1 = require("@nestjs/jwt");
 const auth_service_1 = require("../auth/auth.service");
 const users_module_1 = require("../users/users.module");
+const prisma_service_1 = require("../prisma.service");
 let GamesModule = class GamesModule {
 };
 GamesModule = __decorate([
     (0, common_1.Module)({
         imports: [jwt_1.JwtModule, users_module_1.UsersModule],
-        providers: [games_service_1.GamesService, games_gateway_1.gameGateway, auth_service_1.AuthService],
+        providers: [games_service_1.GamesService, games_gateway_1.gameGateway, auth_service_1.AuthService, prisma_service_1.PrismaService],
         controllers: [games_controller_1.GamesController],
     })
 ], GamesModule);

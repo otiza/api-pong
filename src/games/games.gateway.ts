@@ -4,6 +4,10 @@ import {Socket, Server} from "socket.io"
 import { WsResponse } from '@nestjs/websockets';
 import { SocketAddress } from 'net';
 import { stat } from 'fs';
+import { GamesService } from './games.service';
+import internal from 'stream';
+import { NumberColorFormat } from '@faker-js/faker';
+import exp from 'constants';
 
 const min = (a: number, b: number) => {
   return a < b ? a : b;
@@ -12,32 +16,39 @@ const max = (a: number, b: number) => {
   return a > b ? a : b;
 }
 
-interface UserInput {
+export interface UserInput {
   input: string;
   userId: string;
 }
 
-interface GameID {
+export interface GameID {
   input: string;
 }
 
-interface Mode{
+export interface Mode{
   input:string;
 }
+export interface gametodatabase{
+  winnerid: string;
+  loserid: string;
+  scorewin: number;
+  scorelose: number;
+}
+export interface Game {
 
-interface Game {
   server: Server;
 
   //Constants
   width: number;
   height: number;
   aspectRatio : number;
+  exportgame: gametodatabase;
 
   initBallX: number;
   initBallY: number;
   ballRadius: number;
   ballSpeed: number;
-
+  gameservice: GamesService
   paddleWidth: number;
   paddleHeight: number;
   paddleSpeed: number;
@@ -60,19 +71,21 @@ interface Game {
   state: string;// "waiting" | "play" | "scored" | "endGame"
   players: Array<string>;
   spectators: Array<string>;
-
+  player1id: string;
+  player2id: string;
   scores: Array<number>;
   maxScore: number;
   lastscored: string;
   rounds: number;
   roundsWin: Array<number>;
   winner : string;
+  loser : string;
   room: string;
 
   mod: string; // "1" | "2"
 }
 
-interface GameState {
+export interface GameState {
   // Window dimensions
   width: number;
   height: number;
@@ -108,8 +121,14 @@ interface GameState {
 
   mod: string; // "1" | "2"
 }
+export class gametodatabase{
+  constructor(){
+  this.scorewin = 0;
+  this.scorelose = 0;
+  }
+}
 
-class Game {
+export class Game {
   constructor(server: Server) {
     this.server = server;
 
@@ -131,18 +150,19 @@ class Game {
     this.ballY = this.initBallY;
     this.ballDirX = 1;
     this.ballDirY = 1;
-
+    this.exportgame;
     this.paddleOneX = 0;
     this.paddleOneY = 0;
 
     this.paddleTwoX = this.width - this.paddleWidth;
     this.paddleTwoY = 0;
-
+    this.exportgame = new gametodatabase();
     //this.state = 0;
     this.state = "waiting";
     this.players = [];
     this.room = "";
-
+    this.exportgame.scorewin = 0;
+    this.exportgame.scorelose = 0;
     this.scores = [0,0];
     this.maxScore = 2;
     this.rounds = 2;
@@ -163,22 +183,41 @@ class Game {
   getPlayers(): Array<string> { return this.players }
   
   playerDisconnect(id: string): void{
-    if(this.players[0] === id)
+    if(this.players[0] === id){
       this.winner = this.players[1];
-    else
+      this.exportgame.scorewin =  this.scores[1];
+      this.exportgame.scorelose = this.scores[0];
+      this.exportgame.winnerid = this.player2id;
+      this.exportgame.loserid = this.player1id;
+    }
+    else{
       this.winner = this.players[0];
+      this.exportgame.scorewin =  this.scores[0]
+      this.exportgame.scorelose = this.scores[1]
+      this.exportgame.winnerid = this.player1id;
+      this.exportgame.loserid = this.player2id;
+    }
     this.setState("disconnect");
+    this.gameservice.pushgame(this.exportgame);
     this.server.to(this.room).emit("gameState", this.getGameState());
     this.cleanup();
   } 
 
-  addPlayer(id: string): void {
+  addPlayer(socket: any, playerid: string): void {
+    console.log("ldkflmdsjfùksdphjfriodhfoizeherfeziouphreuiopzrhaoi^fhioa");
+    console.log("b");
+    if (this.players.length === 0){
+      this.player1id = playerid;
+    }
+    if (this.players.length === 1){
+      this.player2id = playerid;
+    }
     if (this.players.length < 2)
     {
-      this.players.push(id);
+      this.players.push(socket.id);
     }
     if (this.players.length === 2) {
-      console.log("players are ready");
+      //console.log("players are ready");
       this.lastscored = this.players[0];
       this.run();
       //this.cleanup();
@@ -216,11 +255,11 @@ class Game {
       }
       if(i % 200 === 0)
       {
-        console.log("room is " + this.room);
-        console.log("y paddle one " + this.getGameState().paddleOneY);
-        console.log("y paddle two " + this.getGameState().paddleTwoY);
-        console.log("base y paddle one " + this.paddleOneY);
-        console.log("base y paddle two " + this.paddleTwoY);
+        //console.log("room is " + this.room);
+        //console.log("y paddle one " + this.getGameState().paddleOneY);
+        //console.log("y paddle two " + this.getGameState().paddleTwoY);
+        //console.log("base y paddle one " + this.paddleOneY);
+        //console.log("base y paddle two " + this.paddleTwoY);
       }
       i++;
       this.server.to(this.room).emit("gameState", this.getGameState());
@@ -322,15 +361,35 @@ class Game {
       }
     }
     if(this.roundsWin[0] === this.rounds)
-    {
+    { 
+      console.log('this.scores[0]');
+      console.log(this.scores[1]);
+      console.log(this.scores[0]);
       this.winner = this.players[0];
+      this.loser = this.players[1];
+      const a : number = this.scores[0];
+      const b: number = this.scores[1];
+      this.exportgame.scorewin = a;
+      this.exportgame.scorelose = b
+      this.exportgame.winnerid = this.player1id;
+      this.exportgame.loserid = this.player2id;
       this.setState("endGame");
+      this.gameservice.pushgame(this.exportgame);
       this.cleanup();
     }
     else if (this.roundsWin[1] === this.rounds)
     {
-      this.winner = this.players[1];
+      this.exportgame.scorewin = 0; 
+      this.exportgame.scorelose = 0;
+      console.log('this.scores[1]');
+      console.log(this.scores[1]);
+      console.log(this.scores[0]);
+      this.exportgame.scorewin =  this.scores[1];
+      this.exportgame.scorelose = this.scores[0];
+      this.exportgame.winnerid = this.player2id;
+      this.exportgame.loserid = this.player1id;
       this.setState("endGame");
+      this.gameservice.pushgame(this.exportgame);
       this.cleanup();
     }
   }
@@ -367,35 +426,35 @@ class Game {
   updatePaddleOne(input: string) {
 
     if (input === "DOWN") {
-      console.log("PADDLE ONE _____DOWN");
-      console.log("room is " + this.room);
+      //console.log("PADDLE ONE _____DOWN");
+      //console.log("room is " + this.room);
       this.paddleOneY += this.paddleSpeed;
       this.paddleOneY = min(this.paddleOneY, this.height - this.paddleHeight);
-      console.log("moving " + this.paddleOneY);
+     // console.log("moving " + this.paddleOneY);
     }
     else {
-      console.log("PADDLE ONE _____UP");
-      console.log("room is " + this.room);
+     // console.log("PADDLE ONE _____UP");
+     // console.log("room is " + this.room);
       this.paddleOneY -= this.paddleSpeed;
       this.paddleOneY = max(this.paddleOneY, 0);
-      console.log("moving " + this.paddleOneY);
+    //  console.log("moving " + this.paddleOneY);
     }
   }
   updatePaddleTwo(input: string) {
 
     if (input === "DOWN") {
-      console.log("PADDLE TWO _____DOWN");
-      console.log("room is " + this.room);
+     // console.log("PADDLE TWO _____DOWN");
+     // console.log("room is " + this.room);
       this.paddleTwoY += this.paddleSpeed;
       this.paddleTwoY = min(this.paddleTwoY, this.height - this.paddleHeight);
-      console.log("moving " + this.paddleTwoY);
+     // console.log("moving " + this.paddleTwoY);
     }
     else {
-      console.log("PADDLE TWO _____UP");
-      console.log("room is " + this.room);
+     // console.log("PADDLE TWO _____UP");
+     // console.log("room is " + this.room);
       this.paddleTwoY -= this.paddleSpeed;
       this.paddleTwoY = max(this.paddleTwoY, 0);
-      console.log("moving " + this.paddleTwoY);
+     // console.log("moving " + this.paddleTwoY);
       
     }
   }
@@ -470,6 +529,7 @@ class Game {
 export class gameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect{
 
   private  server: Server;
+  constructor(private gameservice: GamesService){}
   private logger: Logger = new Logger("AppGateway");
   //game object
   private games: Array<Game> = Array<Game>();
@@ -487,7 +547,7 @@ export class gameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   handleDisconnect(client: Socket) : void{
     this.logger.log(`A player is disconnected ${client.id}`);
     if (this.playerToGameIndex.has(client.id)) {
-      console.log("game Index ", this.playerToGameIndex.get(client.id))
+      //console.log("game Index ", this.playerToGameIndex.get(client.id))
       //this.games[this.playerToGameIndex.get(client.id)].toggleGameState()
       this.games[this.playerToGameIndex.get(client.id)].playerDisconnect(client.id);
       //this.games.slice(this.playerToGameIndex.get(client.id), 1);
@@ -497,15 +557,18 @@ export class gameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   @SubscribeMessage('spectJoined')
   spectJoinRoom(socket: Socket, payload: GameID): void{
-    console.log("spect trying to spectate this game : |" + payload.input + "|");
+   //console.log("spect trying to spectate this game : |" + payload.input + "|");
     //this.games[this.games.length - 1].addSpec(socket.id);
     socket.join(payload.input);
   }
-
+  async getusercookie(cookie: string){
+    this.gameservice.getfromcookie(cookie);
+  }
   @SubscribeMessage('playerJoined')
   joinRoom(socket: Socket, payload: Mode): void {
+    let user : string = this.gameservice.getfromcookie(socket.handshake.headers.cookie)
     const roomName: string = socket.id;
-    console.log(roomName)
+   // console.log(roomName)
     // if (this.playerToGameIndex.has(socket.id)) {
     //   console.log(this.games[this.playerToGameIndex[socket.id]].getPlayers())
     //   if (this.games[this.playerToGameIndex[socket.id]].getPlayers().length == 2)
@@ -517,20 +580,21 @@ export class gameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       let i = 0;
       for(; i < this.games.length; i++)
       {
-        console.log("-------players_number-------");
-        console.log(this.games[i].getPlayers().length);
-        console.log("-------payload_input-------");
-        console.log(payload.input);
-        console.log("-------game_mod-------");
-        console.log(this.games[i].getMod());
-        console.log("++++++++++++++++\n++++++++++++++++\n++++++++++++++++");
+        //console.log("-------players_number-------");
+        //console.log(this.games[i].getPlayers().length);
+        //console.log("-------payload_input-------");
+        //console.log(payload.input);
+        //console.log("-------game_mod-------");
+        //console.log(this.games[i].getMod());
+        //console.log("++++++++++++++++\n++++++++++++++++\n++++++++++++++++");
         if (this.games[i].getPlayers().length === 1 && this.games[i].getMod() == payload.input)
         {
-          this.games[i].addPlayer(socket.id);
+          this.games[i].addPlayer(socket,user);
+          
           socket.join(this.games[i].room);
-          console.log("Joined game address=" + this.games[i].room); // not this room
-          console.log("he joined game index | +" + i);
-          console.log("mod = |" + this.games[i].getMod() + "|");
+          //console.log("Joined game address=" + this.games[i].room); // not this room
+          //console.log("he joined game index | +" + i);
+          //console.log("mod = |" + this.games[i].getMod() + "|");
           this.playerToGameIndex.set(socket.id, i);
           break;
         }
@@ -539,12 +603,13 @@ export class gameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       {
         this.games.push(new Game(this.server)); // player 1 just created a game and waiting for player 2 to join his room
         this.games[i].setMod(payload.input);
+        this.games[i].gameservice = this.gameservice;
         this.games[i].setRoomName(roomName);
-        this.games[i].addPlayer(socket.id);
+        this.games[i].addPlayer(socket,user);
         socket.join(roomName);
         this.playerToGameIndex.set(socket.id, i);
-        console.log("Created game Index=" + (i) + ",adress= " + roomName);
-        console.log("mod = |" + this.games[i].getMod() + "|");
+        //console.log("Created game Index=" + (i) + ",adress= " + roomName);
+        //console.log("mod = |" + this.games[i].getMod() + "|");
       }
       // if (this.games[this.games.length - 1].getPlayers().length < 2) {  // player 1 and player 2 are ready to play
       //   this.games[this.games.length - 1].addPlayer(socket.id);
@@ -565,17 +630,19 @@ export class gameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       this.games.push(new Game(this.server)); // yaaay this is the first player create a game in this session, his waiting for player 2 to join
       this.games[0].setMod(payload.input);
       this.games[0].setRoomName(roomName);
-      this.games[0].addPlayer(socket.id);
+      this.games[0].addPlayer(socket, user);
+      this.games[0].gameservice = this.gameservice;
       socket.join(roomName);
-      console.log("created game Index=" + 0, roomName);
-      console.log("mod = |" + this.games[0].getMod() + "|");
+      //console.log("created game Index=" + 0, roomName);
+      //console.log("mod = |" + this.games[0].getMod() + "|");
       this.playerToGameIndex.set(socket.id, 0);
+      this.gameservice.gametolive(this.games[0]);
     }
   }
 
   @SubscribeMessage('playerInput')
   handlePlayerInput(client: Socket, payload: UserInput): void {
-    console.log("emmit received from + ", client.id);
+    //console.log("emmit received from + ", client.id);
     this.games[this.playerToGameIndex.get(client.id)].handleInput({ ...payload, userId: client.id })
   }
 }

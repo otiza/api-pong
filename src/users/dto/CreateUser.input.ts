@@ -8,6 +8,5 @@ export class CreateUser {
   @IsString()
   username: string;
 
-  //@IsUrl()
-  //avatar: string;
+
 }

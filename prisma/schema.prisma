@@ -57,13 +57,14 @@ model userconfig {
 }
 
 model games {
-  gameId   String    @id @default(uuid())
-  winner   User?     @relation("winner", fields: [winnerid], references: [Userid], onDelete: SetNull)
-  winnerid String?
-  loser    User?     @relation("loser", fields: [loserid], references: [Userid], onDelete: SetNull)
-  loserid  String?
-  Score    Boolean[]
-  playedat DateTime  @default(now())
+  gameId    String   @id @default(uuid())
+  winner    User?    @relation("winner", fields: [winnerid], references: [Userid], onDelete: SetNull)
+  winnerid  String?
+  loser     User?    @relation("loser", fields: [loserid], references: [Userid], onDelete: SetNull)
+  loserid   String?
+  Scorewin  Int
+  Scorelose Int
+  playedat  DateTime @default(now())
 }
 
 model livematch {

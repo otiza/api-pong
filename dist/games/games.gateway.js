@@ -9,16 +9,24 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.gameGateway = void 0;
+exports.gameGateway = exports.Game = exports.gametodatabase = void 0;
 const common_1 = require("@nestjs/common");
 const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
+const games_service_1 = require("./games.service");
 const min = (a, b) => {
     return a < b ? a : b;
 };
 const max = (a, b) => {
     return a > b ? a : b;
 };
+class gametodatabase {
+    constructor() {
+        this.scorewin = 0;
+        this.scorelose = 0;
+    }
+}
+exports.gametodatabase = gametodatabase;
 class Game {
     constructor(server) {
         this.server = server;
@@ -36,13 +44,17 @@ class Game {
         this.ballY = this.initBallY;
         this.ballDirX = 1;
         this.ballDirY = 1;
+        this.exportgame;
         this.paddleOneX = 0;
         this.paddleOneY = 0;
         this.paddleTwoX = this.width - this.paddleWidth;
         this.paddleTwoY = 0;
+        this.exportgame = new gametodatabase();
         this.state = "waiting";
         this.players = [];
         this.room = "";
+        this.exportgame.scorewin = 0;
+        this.exportgame.scorelose = 0;
         this.scores = [0, 0];
         this.maxScore = 2;
         this.rounds = 2;
@@ -58,20 +70,38 @@ class Game {
     }
     getPlayers() { return this.players; }
     playerDisconnect(id) {
-        if (this.players[0] === id)
+        if (this.players[0] === id) {
             this.winner = this.players[1];
-        else
+            this.exportgame.scorewin = this.scores[1];
+            this.exportgame.scorelose = this.scores[0];
+            this.exportgame.winnerid = this.player2id;
+            this.exportgame.loserid = this.player1id;
+        }
+        else {
             this.winner = this.players[0];
+            this.exportgame.scorewin = this.scores[0];
+            this.exportgame.scorelose = this.scores[1];
+            this.exportgame.winnerid = this.player1id;
+            this.exportgame.loserid = this.player2id;
+        }
         this.setState("disconnect");
+        this.gameservice.pushgame(this.exportgame);
         this.server.to(this.room).emit("gameState", this.getGameState());
         this.cleanup();
     }
-    addPlayer(id) {
+    addPlayer(socket, playerid) {
+        console.log("ldkflmdsjfùksdphjfriodhfoizeherfeziouphreuiopzrhaoi^fhioa");
+        console.log("b");
+        if (this.players.length === 0) {
+            this.player1id = playerid;
+        }
+        if (this.players.length === 1) {
+            this.player2id = playerid;
+        }
         if (this.players.length < 2) {
-            this.players.push(id);
+            this.players.push(socket.id);
         }
         if (this.players.length === 2) {
-            console.log("players are ready");
             this.lastscored = this.players[0];
             this.run();
             this.setState("init");
@@ -96,11 +126,6 @@ class Game {
                 this.updateScore();
             }
             if (i % 200 === 0) {
-                console.log("room is " + this.room);
-                console.log("y paddle one " + this.getGameState().paddleOneY);
-                console.log("y paddle two " + this.getGameState().paddleTwoY);
-                console.log("base y paddle one " + this.paddleOneY);
-                console.log("base y paddle two " + this.paddleTwoY);
             }
             i++;
             this.server.to(this.room).emit("gameState", this.getGameState());
@@ -173,13 +198,33 @@ class Game {
             }
         }
         if (this.roundsWin[0] === this.rounds) {
+            console.log('this.scores[0]');
+            console.log(this.scores[1]);
+            console.log(this.scores[0]);
             this.winner = this.players[0];
+            this.loser = this.players[1];
+            const a = this.scores[0];
+            const b = this.scores[1];
+            this.exportgame.scorewin = a;
+            this.exportgame.scorelose = b;
+            this.exportgame.winnerid = this.player1id;
+            this.exportgame.loserid = this.player2id;
             this.setState("endGame");
+            this.gameservice.pushgame(this.exportgame);
             this.cleanup();
         }
         else if (this.roundsWin[1] === this.rounds) {
-            this.winner = this.players[1];
+            this.exportgame.scorewin = 0;
+            this.exportgame.scorelose = 0;
+            console.log('this.scores[1]');
+            console.log(this.scores[1]);
+            console.log(this.scores[0]);
+            this.exportgame.scorewin = this.scores[1];
+            this.exportgame.scorelose = this.scores[0];
+            this.exportgame.winnerid = this.player2id;
+            this.exportgame.loserid = this.player1id;
             this.setState("endGame");
+            this.gameservice.pushgame(this.exportgame);
             this.cleanup();
         }
     }
@@ -201,34 +246,22 @@ class Game {
     }
     updatePaddleOne(input) {
         if (input === "DOWN") {
-            console.log("PADDLE ONE _____DOWN");
-            console.log("room is " + this.room);
             this.paddleOneY += this.paddleSpeed;
             this.paddleOneY = min(this.paddleOneY, this.height - this.paddleHeight);
-            console.log("moving " + this.paddleOneY);
         }
         else {
-            console.log("PADDLE ONE _____UP");
-            console.log("room is " + this.room);
             this.paddleOneY -= this.paddleSpeed;
             this.paddleOneY = max(this.paddleOneY, 0);
-            console.log("moving " + this.paddleOneY);
         }
     }
     updatePaddleTwo(input) {
         if (input === "DOWN") {
-            console.log("PADDLE TWO _____DOWN");
-            console.log("room is " + this.room);
             this.paddleTwoY += this.paddleSpeed;
             this.paddleTwoY = min(this.paddleTwoY, this.height - this.paddleHeight);
-            console.log("moving " + this.paddleTwoY);
         }
         else {
-            console.log("PADDLE TWO _____UP");
-            console.log("room is " + this.room);
             this.paddleTwoY -= this.paddleSpeed;
             this.paddleTwoY = max(this.paddleTwoY, 0);
-            console.log("moving " + this.paddleTwoY);
         }
     }
     handleInput(payload) {
@@ -279,8 +312,10 @@ class Game {
         };
     }
 }
+exports.Game = Game;
 let gameGateway = class gameGateway {
-    constructor() {
+    constructor(gameservice) {
+        this.gameservice = gameservice;
         this.logger = new common_1.Logger("AppGateway");
         this.games = Array();
         this.playerToGameIndex = new Map();
@@ -295,34 +330,25 @@ let gameGateway = class gameGateway {
     handleDisconnect(client) {
         this.logger.log(`A player is disconnected ${client.id}`);
         if (this.playerToGameIndex.has(client.id)) {
-            console.log("game Index ", this.playerToGameIndex.get(client.id));
             this.games[this.playerToGameIndex.get(client.id)].playerDisconnect(client.id);
             this.playerToGameIndex.delete(client.id);
         }
     }
     spectJoinRoom(socket, payload) {
-        console.log("spect trying to spectate this game : |" + payload.input + "|");
         socket.join(payload.input);
     }
+    async getusercookie(cookie) {
+        this.gameservice.getfromcookie(cookie);
+    }
     joinRoom(socket, payload) {
+        let user = this.gameservice.getfromcookie(socket.handshake.headers.cookie);
         const roomName = socket.id;
-        console.log(roomName);
         if (this.games.length) {
             let i = 0;
             for (; i < this.games.length; i++) {
-                console.log("-------players_number-------");
-                console.log(this.games[i].getPlayers().length);
-                console.log("-------payload_input-------");
-                console.log(payload.input);
-                console.log("-------game_mod-------");
-                console.log(this.games[i].getMod());
-                console.log("++++++++++++++++\n++++++++++++++++\n++++++++++++++++");
                 if (this.games[i].getPlayers().length === 1 && this.games[i].getMod() == payload.input) {
-                    this.games[i].addPlayer(socket.id);
+                    this.games[i].addPlayer(socket, user);
                     socket.join(this.games[i].room);
-                    console.log("Joined game address=" + this.games[i].room);
-                    console.log("he joined game index | +" + i);
-                    console.log("mod = |" + this.games[i].getMod() + "|");
                     this.playerToGameIndex.set(socket.id, i);
                     break;
                 }
@@ -330,27 +356,25 @@ let gameGateway = class gameGateway {
             if (i === this.games.length) {
                 this.games.push(new Game(this.server));
                 this.games[i].setMod(payload.input);
+                this.games[i].gameservice = this.gameservice;
                 this.games[i].setRoomName(roomName);
-                this.games[i].addPlayer(socket.id);
+                this.games[i].addPlayer(socket, user);
                 socket.join(roomName);
                 this.playerToGameIndex.set(socket.id, i);
-                console.log("Created game Index=" + (i) + ",adress= " + roomName);
-                console.log("mod = |" + this.games[i].getMod() + "|");
             }
         }
         else {
             this.games.push(new Game(this.server));
             this.games[0].setMod(payload.input);
             this.games[0].setRoomName(roomName);
-            this.games[0].addPlayer(socket.id);
+            this.games[0].addPlayer(socket, user);
+            this.games[0].gameservice = this.gameservice;
             socket.join(roomName);
-            console.log("created game Index=" + 0, roomName);
-            console.log("mod = |" + this.games[0].getMod() + "|");
             this.playerToGameIndex.set(socket.id, 0);
+            this.gameservice.gametolive(this.games[0]);
         }
     }
     handlePlayerInput(client, payload) {
-        console.log("emmit received from + ", client.id);
         this.games[this.playerToGameIndex.get(client.id)].handleInput(Object.assign(Object.assign({}, payload), { userId: client.id }));
     }
 };
@@ -378,7 +402,8 @@ gameGateway = __decorate([
             origin: 'http://localhost:3000',
             credentials: true,
         },
-    })
+    }),
+    __metadata("design:paramtypes", [games_service_1.GamesService])
 ], gameGateway);
 exports.gameGateway = gameGateway;
 //# sourceMappingURL=games.gateway.js.map

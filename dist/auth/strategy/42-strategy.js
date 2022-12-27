@@ -26,7 +26,7 @@ let FortyTwoStrategy = class FortyTwoStrategy extends (0, passport_1.PassportStr
         this.authService = authService;
     }
     async validate(req, accessToken, refreshToken, profile, done) {
-        console.log(profile.photos);
+        console.log(profile._json.image);
         const user = await this.authService.validateUser({
             email: profile.emails == undefined ? '' : profile.emails[0].value,
             username: profile.username,

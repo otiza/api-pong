@@ -28,10 +28,8 @@ export class AuthService {
     };
     return { accessToken: this.jwtService.sign(payload) };
   }
-  async userinfo(payload: string) {
-    const user = await this.jwtService.decode(payload);
-    return {
-      user,
-    };
+  userinfo(payload: string): string {
+    const user = this.jwtService.decode(payload);
+    return user["id"];
   }
 }
