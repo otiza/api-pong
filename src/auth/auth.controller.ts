@@ -1,4 +1,4 @@
-import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Req, Res, UseGuards } from '@nestjs/common';
 import RequestWithUser from 'src/interfaces/requestUser.interface';
 import { AuthService } from './auth.service';
 import { Response, Request } from 'express';
@@ -23,8 +23,10 @@ export class AuthController {
     const { accessToken } = this.authService.loginUser(request);
 
     res.cookie('jwt', accessToken);
-    res.redirect('http://localhost:5000/users/me');
+    res.redirect('http://localhost:3000');
   }
+
+
   @Get('test')
   async getlb(@Req() request: Request)  {
     console.log(await this.authService.userinfo(request.cookies.jwt));

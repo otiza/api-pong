@@ -9,6 +9,7 @@ export declare class GamesController {
         gameswon: games[];
         gameslost: games[];
     }>;
+    ddd(req: RequestWithUser): Promise<void>;
     getwins(req: RequestWithUser): Promise<{
         gameslost: games[];
     }>;

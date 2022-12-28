@@ -4,9 +4,11 @@ import RequestWithUser from 'src/interfaces/requestUser.interface';
 import { UsersService } from './users.service';
 import { User } from '../../node_modules/.prisma/client';
 import { CreateUser } from './dto/CreateUser.input';
+import { Response } from 'express';
 export declare class UsersController {
     private userService;
     constructor(userService: UsersService);
+    logout(request: RequestWithUser, res: Response): Promise<void>;
     getall(): Promise<User[]>;
     getuserbyname(name: string): Promise<User>;
     getuserbyid(id: string): Promise<User>;

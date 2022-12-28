@@ -191,6 +191,8 @@ let UsersService = class UsersService {
         });
     }
     async findOneByusername(username) {
+        console.log("username");
+        console.log(username);
         return this.prisma.user.findUnique({
             where: { username: username },
             include: { userconfig: { select: { is2FA: true } } },

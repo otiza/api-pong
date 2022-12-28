@@ -30,6 +30,15 @@ let GamesController = class GamesController {
         const history = await this.gameservice.gamhistory(req.user.Userid);
         return history;
     }
+    async ddd(req) {
+        const history = await this.gameservice.pushgame({
+            winnerid: "030cddeb-98b6-47f2-a68b-860fc62171a7",
+            loserid: "9aac54d8-d89b-4540-ad8c-97d51c3edb10",
+            scorewin: 2,
+            scorelose: 1
+        });
+        return history;
+    }
     async getwins(req) {
         const history = await this.gameservice.getwins(req.user.Userid);
         return history;
@@ -43,14 +52,14 @@ let GamesController = class GamesController {
         if (id == "win") {
             console.log("wi");
             game.winnerid = req.user.Userid;
-            game.loserid = 'a7ad31ed-1ba7-46f3-b93b-a08c7ab2b25c';
+            game.loserid = '22c8cb8b-5411-4e36-be40-1267d0abb0ed';
             game.scorewin = 3;
             game.scorelose = 0;
         }
         else if (id == "lose") {
             console.log("lose");
             game.loserid = req.user.Userid;
-            game.winnerid = 'a7ad31ed-1ba7-46f3-b93b-a08c7ab2b25c';
+            game.winnerid = '22c8cb8b-5411-4e36-be40-1267d0abb0ed';
             game.scorewin = 3;
             game.scorelose = 0;
         }
@@ -75,6 +84,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], GamesController.prototype, "getme", null);
+__decorate([
+    (0, common_1.Get)('test'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], GamesController.prototype, "ddd", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
     (0, common_1.Get)('winhistory'),

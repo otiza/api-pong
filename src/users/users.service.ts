@@ -6,6 +6,7 @@ import { faker } from '@faker-js/faker';
 import { CreateUser } from './dto/CreateUser.input';
 import { IsEmail } from 'class-validator';
 import { create } from 'domain';
+import { use } from 'passport';
 
 @Injectable()
 export class UsersService {
@@ -184,6 +185,8 @@ export class UsersService {
     });
   }
   async findOneByusername(username: string): Promise<User | null> {
+    console.log("username")
+    console.log(username)
     return this.prisma.user.findUnique({
       where: { username: username },
       include: { userconfig: { select: { is2FA: true } } },

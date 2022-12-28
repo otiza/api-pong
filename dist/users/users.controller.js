@@ -21,6 +21,10 @@ let UsersController = class UsersController {
     constructor(userService) {
         this.userService = userService;
     }
+    async logout(request, res) {
+        res.clearCookie('jwt');
+        +res.redirect('http://localhost:3000');
+    }
     async getall() {
         console.log("were here");
         const all = await this.userService.getAll();
@@ -143,13 +147,22 @@ let UsersController = class UsersController {
     }
 };
 __decorate([
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('/logout'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Res)({ passthrough: true })),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "logout", null);
+__decorate([
     (0, common_1.Get)('all'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getall", null);
 __decorate([
-    (0, common_1.Get)('user/username/:name'),
+    (0, common_1.Get)('username/:name'),
     __param(0, (0, common_1.Param)('name')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

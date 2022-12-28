@@ -26,7 +26,7 @@ let AuthController = class AuthController {
     get42call(request, res) {
         const { accessToken } = this.authService.loginUser(request);
         res.cookie('jwt', accessToken);
-        res.redirect('http://localhost:5000/users/me');
+        res.redirect('http://localhost:3000');
     }
     async getlb(request) {
         console.log(await this.authService.userinfo(request.cookies.jwt));

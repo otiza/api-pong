@@ -1,12 +1,14 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpException,
   HttpStatus,
   Param,
   Post,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -20,11 +22,20 @@ import RequestWithUser from 'src/interfaces/requestUser.interface';
 import { UsersService } from './users.service';
 import { User } from '../../node_modules/.prisma/client';
 import { CreateUser } from './dto/CreateUser.input';
+import { Response, } from 'express';
 @Controller('users')
 export class UsersController {
   constructor(private userService: UsersService) {}
-  //@UseGuards(JwtAuthGuard)
-
+  @UseGuards(JwtAuthGuard)
+  @Get('/logout')
+  async logout(@Req() request: RequestWithUser,@Res({ passthrough: true }) res: Response) {
+  // Delete the JWT cookie
+  
+  res.clearCookie('jwt');
++
+  // Return a response to the frontend indicating that the logout was successful
+  res.redirect('http://localhost:3000');
+}
   @Get('all')
   async getall() {
     console.log("were here")
@@ -32,7 +43,7 @@ export class UsersController {
     return all;
   }
   //@UseGuards(JwtAuthGuard)
-  @Get('user/username/:name')
+  @Get('username/:name')
   async getuserbyname(@Param('name') name: string) {
     const user: User = await this.userService.findOneByusername(name);
     if (!user) throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);

@@ -84,21 +84,13 @@ export class GamesService {
   return games;
  }
  async pushgame(game: gametodatabase){
-  const winner = await this.prismaservice.user.findUnique({
-    where: { Userid: game.winnerid },
-  });
-  const loser = await this.prismaservice.user.findUnique({
-    where: { Userid: game.loserid },
-  });
-  console.log("the users to push")
-  console.log(winner);
-  console.log(loser);
+
   const done = await this.prismaservice.games.create({
     data: {
       Scorewin: game.scorewin,
       Scorelose: game.scorelose,
-      winner: { connect : { Userid: winner.Userid}},
-      loser: { connect : { Userid: loser.Userid}},
+      winner: { connect : { Userid: game.winnerid}},
+      loser: { connect : { Userid: game.loserid}},
     }
   })
 
@@ -106,8 +98,10 @@ export class GamesService {
 
 
  }
+
+ 
  async getall() : Promise<games[]>{
-  return await this.prismaservice.games.findMany();
+  return await this.prismaservice.games.findMany({include :{ winner :{ select: {username : true}}, loser:{ select: {username : true}},}});
  }
   
 }
