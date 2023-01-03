@@ -26,11 +26,11 @@ export class FortyTwoStrategy extends PassportStrategy(Strategy, '42') {
     profile: Profile,
     done: VerifyCallback,
   ): Promise<any> {
-    console.log(profile._json.image);
+    console.log(profile._json.image.link);
     const user = await this.authService.validateUser({
       email: profile.emails == undefined ? '' : profile.emails[0].value,
       username: profile.username,
-      
+      avatar: profile._json.image.link == undefined ? '' : profile._json.image.link,
     });
 
     done(null, user);

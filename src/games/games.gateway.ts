@@ -8,6 +8,7 @@ import { GamesService } from './games.service';
 import internal from 'stream';
 import { NumberColorFormat } from '@faker-js/faker';
 import exp from 'constants';
+import { IndexInformationOptions } from 'typeorm';
 
 const min = (a: number, b: number) => {
   return a < b ? a : b;
@@ -34,6 +35,7 @@ export interface gametodatabase{
   scorewin: number;
   scorelose: number;
 }
+
 export interface Game {
 
   server: Server;
@@ -81,7 +83,7 @@ export interface Game {
   winner : string;
   loser : string;
   room: string;
-
+  index: number;
   mod: string; // "1" | "2"
 }
 
@@ -198,14 +200,13 @@ export class Game {
       this.exportgame.loserid = this.player2id;
     }
     this.setState("disconnect");
-    this.gameservice.pushgame(this.exportgame);
+    console.log('here');
+    this.gameservice.pushgame(this.exportgame, this.index);
     this.server.to(this.room).emit("gameState", this.getGameState());
     this.cleanup();
   } 
 
   addPlayer(socket: any, playerid: string): void {
-    console.log("ldkflmdsjfùksdphjfriodhfoizeherfeziouphreuiopzrhaoi^fhioa");
-    console.log("b");
     if (this.players.length === 0){
       this.player1id = playerid;
     }
@@ -218,7 +219,14 @@ export class Game {
     }
     if (this.players.length === 2) {
       //console.log("players are ready");
-      this.lastscored = this.players[0];
+      this.lastscored = this.players[0];// live now
+      this.index =  this.gameservice.gametolive({
+        p1: this.player1id, p2: this.player2id,
+        score1: 0,
+        score2: 0,
+        rounds1:0,
+        rounds2:0
+      });
       this.run();
       //this.cleanup();
       // for(let i = 0; i < 100000; i++)
@@ -355,7 +363,7 @@ export class Game {
         this.cleanup();
       }
       else
-      {
+      { 
         this.setState("scored");
         this.cleanup();
       }
@@ -374,7 +382,7 @@ export class Game {
       this.exportgame.winnerid = this.player1id;
       this.exportgame.loserid = this.player2id;
       this.setState("endGame");
-      this.gameservice.pushgame(this.exportgame);
+      this.gameservice.pushgame(this.exportgame, this.index);
       this.cleanup();
     }
     else if (this.roundsWin[1] === this.rounds)
@@ -389,7 +397,7 @@ export class Game {
       this.exportgame.winnerid = this.player2id;
       this.exportgame.loserid = this.player1id;
       this.setState("endGame");
-      this.gameservice.pushgame(this.exportgame);
+      this.gameservice.pushgame(this.exportgame, this.index);
       this.cleanup();
     }
   }
@@ -462,6 +470,7 @@ export class Game {
   handleInput(payload: UserInput) {
     if((this.state === "endRound") && payload.input === "SPACE")
     {
+      this.gameservice.updatescore(this.index, this.scores[0], this.scores[1],this.roundsWin)
       this.initRound(payload.userId);
       this.cleanup();
       this.run();
@@ -470,11 +479,12 @@ export class Game {
     else if((this.state === "scored" || this.state === "init" )&& payload.input === "SPACE")
     {
       //onsole.log("game initialized");
+      this.gameservice.updatescore(this.index, this.scores[0], this.scores[1],this.roundsWin)
       this.initGame(payload.userId);
       this.cleanup();
       this.run();
       this.setState("play");
-    }
+    } 
     else if (payload.input !== "SPACE")
     {
       if (payload.userId === this.players[0])
@@ -555,6 +565,12 @@ export class gameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     }
   }
 
+  @SubscribeMessage('livenowtoserver')
+  explive(socket: Socket): void{
+   //console.log("spect trying to spectate this game : |" + payload.input + "|");
+    //this.games[this.games.length - 1].addSpec(socket.id);
+    socket.emit("dffdfd", "slkh dskl");
+  }
   @SubscribeMessage('spectJoined')
   spectJoinRoom(socket: Socket, payload: GameID): void{
    //console.log("spect trying to spectate this game : |" + payload.input + "|");
@@ -565,8 +581,8 @@ export class gameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     this.gameservice.getfromcookie(cookie);
   }
   @SubscribeMessage('playerJoined')
-  joinRoom(socket: Socket, payload: Mode): void {
-    let user : string = this.gameservice.getfromcookie(socket.handshake.headers.cookie)
+  async joinRoom(socket: Socket, payload: Mode): Promise<void> {
+    let user : string = await this.gameservice.getfromcookie(socket.handshake.headers.cookie)
     const roomName: string = socket.id;
    // console.log(roomName)
     // if (this.playerToGameIndex.has(socket.id)) {
@@ -594,7 +610,7 @@ export class gameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
           socket.join(this.games[i].room);
           //console.log("Joined game address=" + this.games[i].room); // not this room
           //console.log("he joined game index | +" + i);
-          //console.log("mod = |" + this.games[i].getMod() + "|");
+          //console.log("mod = |" + this.games[i].getMod() + "|");bb
           this.playerToGameIndex.set(socket.id, i);
           break;
         }
@@ -636,7 +652,7 @@ export class gameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       //console.log("created game Index=" + 0, roomName);
       //console.log("mod = |" + this.games[0].getMod() + "|");
       this.playerToGameIndex.set(socket.id, 0);
-      this.gameservice.gametolive(this.games[0]);
+      //this.gameservice.gametolive(this.games[0]);
     }
   }
 

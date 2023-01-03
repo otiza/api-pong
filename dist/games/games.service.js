@@ -19,26 +19,46 @@ let GamesService = class GamesService {
         this.userservice = userservice;
         this.authservice = authservice;
         this.prismaservice = prismaservice;
+        this.index = 0;
+        this.gamesliv = new Map();
     }
-    async gametolive(game) {
-        console.log(" we are in a live game");
+    gametolive(game) {
+        this.gamesliv.set(this.index, game);
+        const a = this.index;
+        this.index++;
+        console.log(this.gamesliv.get(a));
+        return a;
     }
-    getfromcookie(cookie) {
-        console.log("getfromcookie");
-        var a = cookie.substring(4, cookie.length);
-        var ret = this.authservice.userinfo(a);
-        return (ret);
+    livenow() {
+        const live = [];
+        for (const it of this.gamesliv.values())
+            live.push(it);
+        return live;
+    }
+    async getfromcookie(cookie) {
+        const a = cookie.substring(4, cookie.length);
+        const ret = this.authservice.userinfo(a);
+        const id = await this.prismaservice.user.findUnique({
+            where: { Userid: ret },
+        });
+        return id.username;
+    }
+    updatescore(id, score1, score2, round) {
+        this.gamesliv.get(id).rounds1 = round[0];
+        this.gamesliv.get(id).rounds2 = round[1];
+        this.gamesliv.get(id).score1 = score1;
+        this.gamesliv.get(id).score2 = score2;
     }
     async getwins(User) {
         const me = await this.prismaservice.user.findUnique({
             where: { Userid: User },
             include: {
                 gameswon: true,
-            }
+            },
         });
-        me.gameswon.forEach(element => this.changeidtome(element, User));
+        me.gameswon.forEach((element) => this.changeidtome(element, User));
         const games = {
-            gameslost: me.gameswon
+            gameslost: me.gameswon,
         };
         return games;
     }
@@ -47,49 +67,185 @@ let GamesService = class GamesService {
             where: { Userid: User },
             include: {
                 gameslost: true,
-            }
+            },
         });
-        me.gameslost.forEach(element => this.changeidtome(element, User));
+        me.gameslost.forEach((element) => this.changeidtome(element, User));
         const games = {
-            gameslost: me.gameslost
+            gameslost: me.gameslost,
         };
         return games;
     }
     changeidtome(game, id) {
-        console.log(game);
         if (game.winnerid === id)
-            game.winnerid = "me";
+            game.winnerid = 'me';
         if (game.loserid === id)
-            game.winnerid = "me";
+            game.winnerid = 'me';
+    }
+    async getuserhist(name) {
+        const gameswon = await this.prismaservice.user.findUnique({
+            where: {
+                username: name,
+            },
+            select: {
+                gameswon: {
+                    orderBy: {
+                        playedat: 'asc',
+                    },
+                },
+            },
+        });
+        const gamesLost = await this.prismaservice.user.findUnique({
+            where: {
+                username: name,
+            },
+            select: {
+                gameslost: {
+                    orderBy: {
+                        playedat: 'asc',
+                    },
+                },
+            },
+        });
+        const games = gameswon.gameswon.concat(gamesLost.gameslost);
+        const sortedGames = games.sort((game1, game2) => {
+            const date1 = new Date(game1.playedat);
+            const date2 = new Date(game2.playedat);
+            return date2 - date1;
+        });
+        return sortedGames;
     }
     async gamhistory(User) {
-        const me = await this.prismaservice.user.findUnique({
-            where: { Userid: User },
-            include: {
-                gameslost: true,
-                gameswon: true,
-            }
+        const gameswon = await this.prismaservice.user.findUnique({
+            where: {
+                Userid: User,
+            },
+            select: {
+                gameswon: {
+                    orderBy: {
+                        playedat: 'asc',
+                    },
+                },
+            },
         });
-        me.gameslost.forEach(element => this.changeidtome(element, User));
-        const games = {
-            gameswon: me.gameslost,
-            gameslost: me.gameswon
-        };
-        return games;
+        const gamesLost = await this.prismaservice.user.findUnique({
+            where: {
+                Userid: User,
+            },
+            select: {
+                gameslost: {
+                    orderBy: {
+                        playedat: 'asc',
+                    },
+                },
+            },
+        });
+        const games = gameswon.gameswon.concat(gamesLost.gameslost);
+        const sortedGames = games.sort((game1, game2) => {
+            const date1 = new Date(game1.playedat);
+            const date2 = new Date(game2.playedat);
+            return date2 - date1;
+        });
+        return sortedGames;
     }
-    async pushgame(game) {
+    async checkwinachivements(user) {
+        const achieved = { aId: '', name: '', desc: '' };
+        if (user.gameswon.length >= 15) {
+            achieved.name = 'win15';
+        }
+        else if (user.gameswon.length >= 10) {
+            achieved.name = 'win10';
+        }
+        else if (user.gameswon.length >= 5) {
+            achieved.name = 'win5';
+        }
+        await this.prismaservice.achievement.update({
+            where: { name: achieved.name },
+            data: { claimedby: { connect: { Userid: user.Userid } } },
+        });
+    }
+    async checkleaderachivements(user) {
+        const achieved = { aId: '', name: '', desc: '' };
+        const myleader = await this.getmyleader(user.Userid);
+        console.log('we here');
+        if (myleader.rank <= 1) {
+            console.log('im top1');
+            achieved.name = 'top1';
+        }
+        else if (myleader.rank <= 5) {
+            achieved.name = 'top5';
+        }
+        else if (user.gameswon.length <= 10) {
+            achieved.name = 'top10';
+        }
+        await this.prismaservice.achievement.update({
+            where: { name: achieved.name },
+            data: { claimedby: { connect: { Userid: user.Userid } } },
+        });
+    }
+    async updateachievements(p1) {
+        const user = await this.prismaservice.user.findUnique({
+            where: {
+                username: p1,
+            },
+            include: {
+                gameswon: true,
+                gameslost: true,
+                achivements: true,
+            },
+        });
+        this.checkwinachivements(user);
+    }
+    async pushgame(game, indx) {
+        this.gamesliv.delete(indx);
         const done = await this.prismaservice.games.create({
             data: {
                 Scorewin: game.scorewin,
                 Scorelose: game.scorelose,
-                winner: { connect: { Userid: game.winnerid } },
-                loser: { connect: { Userid: game.loserid } },
-            }
+                winner: { connect: { username: game.winnerid } },
+                loser: { connect: { username: game.loserid } },
+            },
         });
-        console.log("game ended and saved to database");
+        await this.updateachievements(game.winnerid);
+    }
+    async leaderboard() {
+        const leader = await this.prismaservice.user.findMany({
+            include: { gameswon: true, gameslost: true },
+        });
+        const Leaderboard = leader
+            .sort((a, b) => {
+            return b.gameswon.length - a.gameswon.length;
+        })
+            .map((user) => {
+            return {
+                Userid: user.Userid,
+                email: user.email,
+                username: user.username,
+                gameswon: user.gameswon.length,
+                gameslost: user.gameslost.length,
+                avatar: user.avatar,
+            };
+        });
+        return Leaderboard;
+    }
+    async getmyleader(id) {
+        const username = (await this.prismaservice.user.findUnique({
+            where: {
+                Userid: id,
+            },
+        })).username;
+        const a = await this.leaderboard();
+        const user = a.find((u) => u.username === username);
+        const index = a.findIndex((u) => u.username === username);
+        return {
+            username: user.username,
+            gameswon: user.gameswon,
+            gameslost: user.gameslost,
+            avatar: user.avatar,
+            rank: index + 1,
+        };
     }
     async getall() {
-        return await this.prismaservice.games.findMany({ include: { winner: { select: { username: true } }, loser: { select: { username: true } }, } });
+        return await this.prismaservice.games.findMany({});
     }
 };
 GamesService = __decorate([

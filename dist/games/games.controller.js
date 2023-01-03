@@ -23,8 +23,11 @@ let GamesController = class GamesController {
     }
     async getgames() {
         const game = await this.gameservice.getall();
-        console.log(game);
         return game;
+    }
+    async live() {
+        const live = this.gameservice.livenow();
+        return live;
     }
     async getme(req) {
         const history = await this.gameservice.gamhistory(req.user.Userid);
@@ -32,11 +35,15 @@ let GamesController = class GamesController {
     }
     async ddd(req) {
         const history = await this.gameservice.pushgame({
-            winnerid: "030cddeb-98b6-47f2-a68b-860fc62171a7",
-            loserid: "9aac54d8-d89b-4540-ad8c-97d51c3edb10",
+            winnerid: '030cddeb-98b6-47f2-a68b-860fc62171a7',
+            loserid: '9aac54d8-d89b-4540-ad8c-97d51c3edb10',
             scorewin: 2,
-            scorelose: 1
-        });
+            scorelose: 1,
+        }, null);
+        return history;
+    }
+    async getachievements(name) {
+        const history = await this.gameservice.getuserhist(name);
         return history;
     }
     async getwins(req) {
@@ -47,27 +54,32 @@ let GamesController = class GamesController {
         const history = await this.gameservice.getlose(req.user.Userid);
         return history;
     }
+    async gev(req) {
+        const ret = await this.gameservice.getmyleader(req.user.Userid);
+        return ret;
+    }
     async getl(req, id) {
-        let game = new games_gateway_1.gametodatabase();
-        if (id == "win") {
-            console.log("wi");
+        const game = new games_gateway_1.gametodatabase();
+        if (id == 'win') {
             game.winnerid = req.user.Userid;
             game.loserid = '22c8cb8b-5411-4e36-be40-1267d0abb0ed';
             game.scorewin = 3;
             game.scorelose = 0;
         }
-        else if (id == "lose") {
-            console.log("lose");
+        else if (id == 'lose') {
             game.loserid = req.user.Userid;
             game.winnerid = '22c8cb8b-5411-4e36-be40-1267d0abb0ed';
             game.scorewin = 3;
             game.scorelose = 0;
         }
         else {
-            return ("syntax error");
+            return 'syntax error';
         }
-        const history = await this.gameservice.pushgame(game);
-        return "game created";
+        const history = await this.gameservice.pushgame(game, null);
+        return 'game created';
+    }
+    async getleader() {
+        return await this.gameservice.leaderboard();
     }
 };
 __decorate([
@@ -76,6 +88,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], GamesController.prototype, "getgames", null);
+__decorate([
+    (0, common_1.Get)('live'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], GamesController.prototype, "live", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
     (0, common_1.Get)('history'),
@@ -91,6 +109,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], GamesController.prototype, "ddd", null);
+__decorate([
+    (0, common_1.Get)('history/:name'),
+    __param(0, (0, common_1.Param)('name')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], GamesController.prototype, "getachievements", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
     (0, common_1.Get)('winhistory'),
@@ -109,6 +134,14 @@ __decorate([
 ], GamesController.prototype, "getloses", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('getmyleader'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], GamesController.prototype, "gev", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
     (0, common_1.Get)('addgame/:id'),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Param)('id')),
@@ -116,6 +149,12 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], GamesController.prototype, "getl", null);
+__decorate([
+    (0, common_1.Get)('leaderboard'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], GamesController.prototype, "getleader", null);
 GamesController = __decorate([
     (0, common_1.Controller)('games'),
     __metadata("design:paramtypes", [games_service_1.GamesService])

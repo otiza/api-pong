@@ -12,23 +12,63 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UsersController = void 0;
+exports.UsersController = exports.imageFileInterceptor = exports.storage = void 0;
 const common_1 = require("@nestjs/common");
+const multer_1 = require("multer");
+const uuid_1 = require("uuid");
+const path = require("path");
 const jwt_guard_1 = require("../auth/guard/jwt.guard");
 const users_service_1 = require("./users.service");
 const CreateUser_input_1 = require("./dto/CreateUser.input");
+const platform_express_1 = require("@nestjs/platform-express");
+exports.storage = {
+    storage: (0, multer_1.diskStorage)({
+        destination: './uploads/profileimages',
+        filename: (req, file, cb) => {
+            const filename = path.parse(file.originalname).name.replace(/\s/g, '') + (0, uuid_1.v4)();
+            const extension = path.parse(file.originalname).ext;
+            cb(null, `${filename}${extension}`);
+        },
+    }),
+};
+exports.imageFileInterceptor = (0, platform_express_1.FileInterceptor)('file', {
+    limits: {
+        fileSize: 1 * 1024 * 1024,
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        }
+        else {
+            cb(new common_1.BadRequestException('Invalid file type'), false);
+        }
+    },
+});
 let UsersController = class UsersController {
     constructor(userService) {
         this.userService = userService;
     }
+    async changeusername(request, body) {
+        console.log(body.username);
+        const a = await this.userService.updateusername(request.user, request.body.username);
+        if (!a)
+            throw new common_1.HttpException('Username already taken', common_1.HttpStatus.CONFLICT);
+        else
+            throw new common_1.HttpException('done', common_1.HttpStatus.ACCEPTED);
+    }
     async logout(request, res) {
         res.clearCookie('jwt');
-        +res.redirect('http://localhost:3000');
+        +(res.redirect('http://localhost:3000'));
     }
     async getall() {
-        console.log("were here");
+        console.log('were here');
         const all = await this.userService.getAll();
         return all;
+    }
+    async uploadFile(file, req) {
+        const user = req.user;
+        await this.userService.updateavatr(file.filename, req.user.Userid);
+        return file.filename;
     }
     async getuserbyname(name) {
         const user = await this.userService.findOneByusername(name);
@@ -66,6 +106,18 @@ let UsersController = class UsersController {
             throw new common_1.HttpException('are u a user', common_1.HttpStatus.NOT_FOUND);
         return user;
     }
+    async getachievements(name) {
+        const user = await this.userService.getuserachieved(name);
+        if (!user)
+            throw new common_1.HttpException('User Not Found', common_1.HttpStatus.NOT_FOUND);
+        return user;
+    }
+    async getachieved(req) {
+        const user = await this.userService.getachieved(req.user.email);
+        if (!user)
+            throw new common_1.HttpException('are u a user', common_1.HttpStatus.NOT_FOUND);
+        return user;
+    }
     async create(user) {
         const error = await this.userService.userdatalreadyexist(user);
         if (error)
@@ -77,7 +129,7 @@ let UsersController = class UsersController {
         return follow;
     }
     async getfol(req) {
-        const follow = await this.userService.getfollowed(req.user.Userid);
+        const follow = await this.userService.getfollows(req.user.Userid);
         return follow;
     }
     async getblocks(req) {
@@ -148,6 +200,15 @@ let UsersController = class UsersController {
 };
 __decorate([
     (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
+    (0, common_1.Patch)('/username'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, CreateUser_input_1.updateUsername]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "changeusername", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
     (0, common_1.Get)('/logout'),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Res)({ passthrough: true })),
@@ -161,6 +222,16 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getall", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('avatar'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', exports.storage)),
+    __param(0, (0, common_1.UploadedFile)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "uploadFile", null);
 __decorate([
     (0, common_1.Get)('username/:name'),
     __param(0, (0, common_1.Param)('name')),
@@ -206,6 +277,21 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getme", null);
+__decorate([
+    (0, common_1.Get)('achievements/:name'),
+    __param(0, (0, common_1.Param)('name')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getachievements", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('achievements'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getachieved", null);
 __decorate([
     (0, common_1.Post)('add'),
     __param(0, (0, common_1.Body)()),

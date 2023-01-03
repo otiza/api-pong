@@ -12,7 +12,16 @@ import { use } from 'passport';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
   //creating the users
-
+  async updateavatr(filename: string, id: string) {
+    const done = await this.prisma.user.update({
+      where: { Userid: id },
+      data: {
+        avatar: 'http://localhost:5000/profileimages/' + filename,
+      },
+    });
+    console.log('done');
+    console.log(done);
+  }
   async userdatalreadyexist(userData: CreateUser): Promise<string | boolean> {
     if (await this.findOneByEmail(userData.email)) return 'email exist';
     return false;
@@ -22,6 +31,7 @@ export class UsersService {
       data: {
         email: userData.email,
         username: userData.username,
+        avatar: userData.avatar,
         userconfig: {
           create: { is2FA: false },
         },
@@ -41,7 +51,7 @@ export class UsersService {
       data: { is2FA: true },
     });
   }
-  
+
   async deactivate2fa(id: string): Promise<userconfig | boolean> {
     const user = await this.findOneById(id);
     if (!user) return false;
@@ -58,11 +68,12 @@ export class UsersService {
     const fakeUser: Prisma.UserCreateInput = {
       email: faker.internet.email(),
       username: faker.name.firstName(),
+      avatar: faker.image.avatar(),
     };
     return fakeUser;
   }
   async faker() {
-    const userData: Prisma.UserCreateInput[] = [];
+    const userData: any = [];
     for (let i = 0; i < 20; i++) {
       userData.push(await this.genfakeone());
     }
@@ -185,8 +196,6 @@ export class UsersService {
     });
   }
   async findOneByusername(username: string): Promise<User | null> {
-    console.log("username")
-    console.log(username)
     return this.prisma.user.findUnique({
       where: { username: username },
       include: { userconfig: { select: { is2FA: true } } },
@@ -226,21 +235,24 @@ export class UsersService {
   }
   async getfollowers(id: string): Promise<follow[] | null> {
     const user: User = await this.findOneById(id);
-    console.log('followers');
+    
     return await this.prisma.follow.findMany({
       where: { followingId: user.username },
     });
   }
-  async getfollowed(id: string): Promise<follow[] | null> {
+  async getfollows(id: string): Promise<follow[] | null> {
     const user: User = await this.findOneById(id);
-    console.log('follower');
+    
     return await this.prisma.follow.findMany({
       where: { followerId: user.username },
+      include: {
+        followed: true,
+      }
     });
   }
   async getblocks(id: string): Promise<block[] | null> {
     const user: User = await this.findOneById(id);
-    console.log('blocks');
+    
     return await this.prisma.block.findMany({
       where: { blockerId: user.username },
     });
@@ -255,8 +267,32 @@ export class UsersService {
   async findOneByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { email: email },
-      include: { userconfig: { select: { is2FA: true } } },
+      include: { userconfig: { select: { is2FA: true } }, achivements: true },
     });
   }
-  
+  async getachieved(email: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: { email: email },
+      include: { achivements: true },
+    });
+  }
+  async getuserachieved(name: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: { username: name },
+      include: { achivements: true },
+    });
+  }
+  async updateusername(user: User, newname: string) {
+    const usernamexist = await this.prisma.user.findUnique({
+      where: { username: newname },
+    });
+    if (usernamexist) {
+      return false;
+    } else
+      await this.prisma.user.update({
+        where: { Userid: user.Userid },
+        data: { username: newname },
+      });
+    return true;
+  }
 }

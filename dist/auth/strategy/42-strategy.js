@@ -26,10 +26,11 @@ let FortyTwoStrategy = class FortyTwoStrategy extends (0, passport_1.PassportStr
         this.authService = authService;
     }
     async validate(req, accessToken, refreshToken, profile, done) {
-        console.log(profile._json.image);
+        console.log(profile._json.image.link);
         const user = await this.authService.validateUser({
             email: profile.emails == undefined ? '' : profile.emails[0].value,
             username: profile.username,
+            avatar: profile._json.image.link == undefined ? '' : profile._json.image.link,
         });
         done(null, user);
     }

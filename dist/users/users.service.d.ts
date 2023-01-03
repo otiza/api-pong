@@ -5,6 +5,7 @@ import { CreateUser } from './dto/CreateUser.input';
 export declare class UsersService {
     private prisma;
     constructor(prisma: PrismaService);
+    updateavatr(filename: string, id: string): Promise<void>;
     userdatalreadyexist(userData: CreateUser): Promise<string | boolean>;
     Create(userData: CreateUser): Promise<User>;
     getAll(): Promise<User[]>;
@@ -12,7 +13,7 @@ export declare class UsersService {
     deactivate2fa(id: string): Promise<userconfig | boolean>;
     findOne(): Promise<User[] | null>;
     genfakeone(): Promise<Prisma.UserCreateInput>;
-    faker(): Promise<Prisma.UserCreateInput[]>;
+    faker(): Promise<any>;
     daleteall(): Promise<void>;
     follow(from: string, to: string): Promise<boolean>;
     unfollow(from: string, to: string): Promise<boolean>;
@@ -23,8 +24,11 @@ export declare class UsersService {
     isalreadyblocked(userfrom: User, userto: User): Promise<boolean>;
     isalreadyfollowing(userfrom: User, userto: User): Promise<boolean>;
     getfollowers(id: string): Promise<follow[] | null>;
-    getfollowed(id: string): Promise<follow[] | null>;
+    getfollows(id: string): Promise<follow[] | null>;
     getblocks(id: string): Promise<block[] | null>;
     getblockers(id: string): Promise<block[] | null>;
     findOneByEmail(email: string): Promise<User | null>;
+    getachieved(email: string): Promise<User | null>;
+    getuserachieved(name: string): Promise<User | null>;
+    updateusername(user: User, newname: string): Promise<boolean>;
 }

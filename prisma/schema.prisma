@@ -58,14 +58,14 @@ model userconfig {
 
 model games {
   gameId    String   @id @default(uuid())
-  winner    User?    @relation("winner", fields: [winnerid], references: [Userid], onDelete: SetNull)
+  winner    User?    @relation("winner", fields: [winnerid], references: [username], onDelete: SetNull)
   winnerid  String?
-  loser     User?    @relation("loser", fields: [loserid], references: [Userid], onDelete: SetNull)
+  loser     User?    @relation("loser", fields: [loserid], references: [username], onDelete: SetNull)
   loserid   String?
   Scorewin  Int
   Scorelose Int
   playedat  DateTime @default(now())
-}
+} 
 
 model livematch {
   matchid String @id @default(uuid())
@@ -80,7 +80,7 @@ model livematch {
 
 model achievement {
   aId       String @id @default(uuid())
-  claimedby User[]
-  name      String
+  claimedby User[] 
+  name      String @unique()   
   desc      String
 }

@@ -85,13 +85,12 @@ class Game {
             this.exportgame.loserid = this.player2id;
         }
         this.setState("disconnect");
-        this.gameservice.pushgame(this.exportgame);
+        console.log('here');
+        this.gameservice.pushgame(this.exportgame, this.index);
         this.server.to(this.room).emit("gameState", this.getGameState());
         this.cleanup();
     }
     addPlayer(socket, playerid) {
-        console.log("ldkflmdsjfùksdphjfriodhfoizeherfeziouphreuiopzrhaoi^fhioa");
-        console.log("b");
         if (this.players.length === 0) {
             this.player1id = playerid;
         }
@@ -103,6 +102,13 @@ class Game {
         }
         if (this.players.length === 2) {
             this.lastscored = this.players[0];
+            this.index = this.gameservice.gametolive({
+                p1: this.player1id, p2: this.player2id,
+                score1: 0,
+                score2: 0,
+                rounds1: 0,
+                rounds2: 0
+            });
             this.run();
             this.setState("init");
         }
@@ -210,7 +216,7 @@ class Game {
             this.exportgame.winnerid = this.player1id;
             this.exportgame.loserid = this.player2id;
             this.setState("endGame");
-            this.gameservice.pushgame(this.exportgame);
+            this.gameservice.pushgame(this.exportgame, this.index);
             this.cleanup();
         }
         else if (this.roundsWin[1] === this.rounds) {
@@ -224,7 +230,7 @@ class Game {
             this.exportgame.winnerid = this.player2id;
             this.exportgame.loserid = this.player1id;
             this.setState("endGame");
-            this.gameservice.pushgame(this.exportgame);
+            this.gameservice.pushgame(this.exportgame, this.index);
             this.cleanup();
         }
     }
@@ -266,12 +272,14 @@ class Game {
     }
     handleInput(payload) {
         if ((this.state === "endRound") && payload.input === "SPACE") {
+            this.gameservice.updatescore(this.index, this.scores[0], this.scores[1], this.roundsWin);
             this.initRound(payload.userId);
             this.cleanup();
             this.run();
             this.setState("play");
         }
         else if ((this.state === "scored" || this.state === "init") && payload.input === "SPACE") {
+            this.gameservice.updatescore(this.index, this.scores[0], this.scores[1], this.roundsWin);
             this.initGame(payload.userId);
             this.cleanup();
             this.run();
@@ -334,14 +342,17 @@ let gameGateway = class gameGateway {
             this.playerToGameIndex.delete(client.id);
         }
     }
+    explive(socket) {
+        socket.emit("dffdfd", "slkh dskl");
+    }
     spectJoinRoom(socket, payload) {
         socket.join(payload.input);
     }
     async getusercookie(cookie) {
         this.gameservice.getfromcookie(cookie);
     }
-    joinRoom(socket, payload) {
-        let user = this.gameservice.getfromcookie(socket.handshake.headers.cookie);
+    async joinRoom(socket, payload) {
+        let user = await this.gameservice.getfromcookie(socket.handshake.headers.cookie);
         const roomName = socket.id;
         if (this.games.length) {
             let i = 0;
@@ -371,13 +382,18 @@ let gameGateway = class gameGateway {
             this.games[0].gameservice = this.gameservice;
             socket.join(roomName);
             this.playerToGameIndex.set(socket.id, 0);
-            this.gameservice.gametolive(this.games[0]);
         }
     }
     handlePlayerInput(client, payload) {
         this.games[this.playerToGameIndex.get(client.id)].handleInput(Object.assign(Object.assign({}, payload), { userId: client.id }));
     }
 };
+__decorate([
+    (0, websockets_1.SubscribeMessage)('livenowtoserver'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [socket_io_1.Socket]),
+    __metadata("design:returntype", void 0)
+], gameGateway.prototype, "explive", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('spectJoined'),
     __metadata("design:type", Function),
@@ -388,7 +404,7 @@ __decorate([
     (0, websockets_1.SubscribeMessage)('playerJoined'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], gameGateway.prototype, "joinRoom", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('playerInput'),

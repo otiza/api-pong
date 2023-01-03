@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateUser = void 0;
+exports.updateUsername = exports.IsUsernameLengthValid = exports.CreateUser = void 0;
 const class_validator_1 = require("class-validator");
 class CreateUser {
 }
@@ -22,5 +22,35 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateUser.prototype, "username", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Object)
+], CreateUser.prototype, "avatar", void 0);
 exports.CreateUser = CreateUser;
+const class_validator_2 = require("class-validator");
+function IsUsernameLengthValid(validationArguments) {
+    return function (object, propertyName) {
+        (0, class_validator_2.registerDecorator)({
+            name: 'isUsernameLengthValid',
+            target: object.constructor,
+            propertyName: propertyName,
+            constraints: [],
+            validator: {
+                validate(value) {
+                    return typeof value === 'string' && value.length <= 30;
+                },
+            },
+        });
+    };
+}
+exports.IsUsernameLengthValid = IsUsernameLengthValid;
+class updateUsername {
+}
+__decorate([
+    IsUsernameLengthValid(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], updateUsername.prototype, "username", void 0);
+exports.updateUsername = updateUsername;
 //# sourceMappingURL=CreateUser.input.js.map

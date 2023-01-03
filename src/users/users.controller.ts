@@ -10,6 +10,10 @@ import {
   Req,
   Res,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  Patch,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   block,
@@ -17,30 +21,97 @@ import {
   Prisma,
   userconfig,
 } from '../../node_modules/.prisma/client';
+import { Express } from 'express';
+import { diskStorage } from 'multer';
+import { v4 as uuidv4 } from 'uuid';
+import path = require('path');
 import { JwtAuthGuard } from 'src/auth/guard/jwt.guard';
 import RequestWithUser from 'src/interfaces/requestUser.interface';
 import { UsersService } from './users.service';
 import { User } from '../../node_modules/.prisma/client';
-import { CreateUser } from './dto/CreateUser.input';
-import { Response, } from 'express';
+import { CreateUser, updateUsername } from './dto/CreateUser.input';
+import { Response } from 'express';
+import { FileInterceptor, MulterModule } from '@nestjs/platform-express';
+import multer from 'multer';
+import { timingSafeEqual } from 'crypto';
+import UpdateUsernameRequest from 'src/interfaces/UpdateUsername.interface';
+export const storage = {
+  storage: diskStorage({
+    destination: './uploads/profileimages',
+
+    filename: (req, file, cb) => {
+      const filename: string =
+        path.parse(file.originalname).name.replace(/\s/g, '') + uuidv4();
+      const extension: string = path.parse(file.originalname).ext;
+
+      cb(null, `${filename}${extension}`);
+    },
+  }),
+};
+export const imageFileInterceptor = FileInterceptor('file', {
+  limits: {
+    fileSize: 1 * 1024 * 1024, // 5 MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new BadRequestException('Invalid file type'), false);
+    }
+  },
+});
 @Controller('users')
 export class UsersController {
   constructor(private userService: UsersService) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('/username')
+  async changeusername(
+    @Req() request: RequestWithUser,
+    @Body() body: updateUsername,
+  ) {
+    console.log(body.username);
+    const a = await this.userService.updateusername(
+      request.user,
+      request.body.username,
+    );
+    if (!a)
+      throw new HttpException('Username already taken', HttpStatus.CONFLICT);
+    else throw new HttpException('done', HttpStatus.ACCEPTED);
+  }
   @UseGuards(JwtAuthGuard)
   @Get('/logout')
-  async logout(@Req() request: RequestWithUser,@Res({ passthrough: true }) res: Response) {
-  // Delete the JWT cookie
-  
-  res.clearCookie('jwt');
-+
-  // Return a response to the frontend indicating that the logout was successful
-  res.redirect('http://localhost:3000');
-}
+  async logout(
+    @Req() request: RequestWithUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    // Delete the JWT cookie
+
+    res.clearCookie('jwt');
+    +(
+      // Return a response to the frontend indicating that the logout was successful
+      res.redirect('http://localhost:3000')
+    );
+  }
+
   @Get('all')
   async getall() {
-    console.log("were here")
+    console.log('were here');
     const all: User[] = await this.userService.getAll();
     return all;
+  }
+  @UseGuards(JwtAuthGuard)
+  @Post('avatar')
+  //@UseInterceptors(imageFileInterceptor)
+  @UseInterceptors(FileInterceptor('file', storage))
+  async uploadFile(@UploadedFile() file, @Req() req: RequestWithUser) {
+    const user = req.user;
+    await this.userService.updateavatr(file.filename, req.user.Userid);
+    return file.filename;
+    //return this.userService.updateOne(user.id, {profileImage: file.filename}).pipe(
+    //  tap((user: User) => console.log(user)),
+    // map((user:User) => ({profileImage: user.profileImage}))
+    //)
   }
   //@UseGuards(JwtAuthGuard)
   @Get('username/:name')
@@ -63,6 +134,7 @@ export class UsersController {
     if (!user) throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
     return user;
   }
+
   @UseGuards(JwtAuthGuard)
   @Get('user/enable2FA')
   async enable2FA(@Req() req: RequestWithUser) {
@@ -85,6 +157,19 @@ export class UsersController {
     if (!user) throw new HttpException('are u a user', HttpStatus.NOT_FOUND);
     return user;
   }
+  @Get('achievements/:name')
+  async getachievements(@Param('name') name: string) {
+    const user: User = await this.userService.getuserachieved(name);
+    if (!user) throw new HttpException('User Not Found', HttpStatus.NOT_FOUND);
+    return user;
+  }
+  @UseGuards(JwtAuthGuard)
+  @Get('achievements')
+  async getachieved(@Req() req: RequestWithUser) {
+    const user: User = await this.userService.getachieved(req.user.email);
+    if (!user) throw new HttpException('are u a user', HttpStatus.NOT_FOUND);
+    return user;
+  }
   @Post('add')
   async create(@Body() user: CreateUser) {
     const error = await this.userService.userdatalreadyexist(user);
@@ -102,10 +187,8 @@ export class UsersController {
   }
   @UseGuards(JwtAuthGuard)
   @Get('follows')
-  async getfol(@Req() req: RequestWithUser) {
-    const follow: follow[] = await this.userService.getfollowed(
-      req.user.Userid,
-    );
+  async getfol(@Req() req:  RequestWithUser) {
+    const follow: follow[] = await this.userService.getfollows(req.user.Userid);
     return follow;
   }
   @UseGuards(JwtAuthGuard)
@@ -183,6 +266,7 @@ export class UsersController {
     }
     throw new HttpException('failed', HttpStatus.CONFLICT);
   }
+
   @Get('fakepop')
   async fakepop() {
     await this.userService.faker();

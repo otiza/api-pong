@@ -54,6 +54,7 @@ export interface Game {
     winner: string;
     loser: string;
     room: string;
+    index: number;
     mod: string;
 }
 export interface GameState {
@@ -119,8 +120,9 @@ export declare class gameGateway implements OnGatewayInit, OnGatewayConnection, 
     afterInit(server: Server): void;
     handleConnection(client: Socket, ...args: any[]): void;
     handleDisconnect(client: Socket): void;
+    explive(socket: Socket): void;
     spectJoinRoom(socket: Socket, payload: GameID): void;
     getusercookie(cookie: string): Promise<void>;
-    joinRoom(socket: Socket, payload: Mode): void;
+    joinRoom(socket: Socket, payload: Mode): Promise<void>;
     handlePlayerInput(client: Socket, payload: UserInput): void;
 }
